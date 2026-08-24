@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f5ead8">
+<title>Boodschappenlijst weekend weg</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo:wght@400&family=Figtree:wght@400;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --color-bg: #f5ead8;
+    --color-text: #201e1d;
+    --color-accent: #c67139;
+    --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+    --color-neutral-100: #f9f4ed;
+    --color-neutral-200: #eee7db;
+    --color-neutral-300: #dcd3c4;
+    --color-neutral-400: #c0b6a5;
+    --color-neutral-500: #a19786;
+    --color-neutral-600: #82796a;
+    --color-neutral-700: #645c50;
+    --color-neutral-800: #474238;
+    --color-accent-100: #fff2eb;
+    --color-accent-200: #ffe1d0;
+    --color-accent-600: #b2622d;
+    --color-accent-700: #8c491a;
+    --color-accent-2-200: #e1eecc;
+    --color-accent-2-500: #8fa073;
+    --color-accent-2-600: #728157;
+    --color-accent-2-700: #56633f;
+    --color-accent-2-800: #3d472b;
+    --radius-md: 16px;
+    --radius-lg: 28px;
+    --shadow-md: 0 3px 10px color-mix(in srgb, #2e2b25 16%, transparent);
+    --shadow-lg: 0 12px 32px color-mix(in srgb, #2e2b25 22%, transparent);
+    --font-heading: "Caprasimo", system-ui, sans-serif;
+    --font-body: "Figtree", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, input { font-family: var(--font-body); color: var(--color-text); }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  a { color: var(--color-accent-700); }
+  a:hover { color: var(--color-accent-600); }
+  .noscroll { scrollbar-width: none; -ms-overflow-style: none; }
+  .noscroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+  .app { max-width: 460px; margin: 0 auto; min-height: 100%; position: relative; }
+  .scroll { padding: env(safe-area-inset-top) 0 148px; }
+
+  .head { padding: 22px 22px 20px; }
+  .kicker {
+    margin: 0; font-size: 11.5px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--color-accent-700);
+  }
+  .headtop { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .me {
+    border: 1px solid var(--color-divider); background: transparent; border-radius: 999px;
+    padding: 5px 11px 5px 5px; display: flex; align-items: center; gap: 7px; cursor: pointer;
+    font-size: 12.5px; font-weight: 600; color: var(--color-neutral-700);
+  }
+  .me:hover { background: var(--color-neutral-200); }
+  .me:active { background: var(--color-neutral-300); }
+  .av {
+    border-radius: 999px; color: var(--color-bg); font-family: var(--font-heading);
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .me .av { width: 22px; height: 22px; font-size: 11px; }
+  h1 { margin: 10px 0 0; font-family: var(--font-heading); font-weight: 400; font-size: 40px; line-height: 1.02; letter-spacing: -.02em; }
+  .prog { margin-top: 16px; display: flex; align-items: baseline; justify-content: space-between; }
+  .prog b { font-size: 14px; font-weight: 600; }
+  .prog span { font-size: 12.5px; color: var(--color-neutral-600); }
+  .bar { margin-top: 8px; height: 10px; border-radius: 999px; background: var(--color-neutral-200); overflow: hidden; }
+  .bar div { height: 100%; border-radius: 999px; background: var(--color-accent-2-500); transition: width .35s cubic-bezier(.2,.8,.2,1); }
+
+  .people { margin-top: 18px; display: flex; gap: 10px; overflow-x: auto; padding-bottom: 2px; }
+  .person {
+    flex: none; border: 1.5px solid var(--color-divider); background: var(--color-neutral-100);
+    border-radius: var(--radius-lg); padding: 9px 13px 10px; display: flex; flex-direction: column;
+    align-items: center; gap: 5px; cursor: pointer; min-width: 66px;
+  }
+  .person.on { border-color: var(--color-accent); background: var(--color-accent-100); }
+  .person .av { width: 34px; height: 34px; font-size: 14px; }
+  .person .nm { font-size: 12px; font-weight: 700; line-height: 1.1; }
+  .person .ct { font-size: 10.5px; color: var(--color-neutral-600); line-height: 1; }
+
+  .bar-controls {
+    position: sticky; top: 0; z-index: 3; background: var(--color-bg);
+    padding: 10px 22px 12px; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--color-divider);
+  }
+  .chips { display: flex; gap: 7px; overflow-x: auto; flex: 1; }
+  .chip {
+    flex: none; border: 1px solid var(--color-divider); background: transparent;
+    color: var(--color-neutral-700); border-radius: 999px; padding: 7px 14px;
+    font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .chip:hover { background: var(--color-neutral-200); }
+  .chip.on { background: var(--color-accent-2-700); border-color: var(--color-accent-2-700); color: var(--color-bg); }
+  .iconbtn {
+    flex: none; width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--color-divider);
+    background: transparent; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--color-neutral-800);
+  }
+  .iconbtn:hover { background: var(--color-neutral-200); }
+  .iconbtn.on { background: var(--color-accent-200); }
+
+  .list { padding: 14px 18px 0; display: flex; flex-direction: column; gap: 14px; }
+  .grouphead { display: flex; align-items: center; gap: 9px; padding: 0 6px 9px; }
+  .grouphead b { font-family: var(--font-heading); font-weight: 400; font-size: 15px; color: var(--color-neutral-800); }
+  .grouphead span { font-size: 11px; font-weight: 700; color: var(--color-neutral-600); background: var(--color-neutral-200); border-radius: 999px; padding: 2px 8px; }
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    display: flex; align-items: center; gap: 13px; background: var(--color-neutral-100);
+    border: 1px solid transparent; border-radius: var(--radius-md); padding: 13px 14px;
+    transition: opacity .2s, background .2s;
+  }
+  .row.done { background: transparent; border-color: var(--color-divider); opacity: .6; }
+  .check {
+    flex: none; width: 29px; height: 29px; border-radius: 999px; border: 2.5px solid var(--color-neutral-400);
+    background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .check:hover { border-color: var(--color-accent-2-600); }
+  .row.done .check { border-color: var(--color-accent-2-600); background: var(--color-accent-2-600); }
+  .check svg { display: none; }
+  .row.done .check svg { display: block; animation: pop .28s ease-out; }
+  @keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  .body { flex: 1; min-width: 0; }
+  .title { display: flex; align-items: center; gap: 8px; }
+  .title .nm { font-size: 15.5px; font-weight: 600; line-height: 1.25; }
+  .row.done .title .nm { text-decoration: line-through; }
+  .qty { flex: none; font-size: 11.5px; font-weight: 700; color: var(--color-accent-700); background: var(--color-accent-200); border-radius: 999px; padding: 2px 8px; }
+  .note { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
+  .claim {
+    flex: none; width: 32px; height: 32px; border-radius: 999px; border: 1.5px dashed var(--color-neutral-400);
+    background: transparent; color: var(--color-neutral-500); font-size: 12.5px; font-weight: 700;
+    font-family: var(--font-heading); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0;
+  }
+  .claim.taken { border: none; color: var(--color-bg); }
+  .del {
+    flex: none; width: 30px; height: 30px; border: none; background: transparent; border-radius: 999px;
+    color: var(--color-neutral-500); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .del:hover { background: var(--color-accent-200); color: var(--color-accent-700); }
+
+  .empty { text-align: center; padding: 34px 24px 10px; color: var(--color-neutral-600); }
+  .empty .blob { width: 62px; height: 62px; border-radius: 999px; background: var(--color-neutral-200); margin: 0 auto 14px; }
+  .empty b { display: block; font-family: var(--font-heading); font-weight: 400; font-size: 19px; color: var(--color-text); margin-bottom: 5px; }
+  .empty span { font-size: 13.5px; }
+
+  .donetoggle {
+    width: 100%; border: 1px dashed var(--color-neutral-400); background: transparent;
+    border-radius: var(--radius-md); padding: 12px; font-size: 13px; font-weight: 700;
+    color: var(--color-neutral-700); cursor: pointer;
+  }
+  .donetoggle:hover { background: var(--color-neutral-200); }
+
+  .footbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 4;
+    padding: 14px 18px calc(22px + env(safe-area-inset-bottom));
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(to top, var(--color-bg) 62%, transparent);
+  }
+  .footbar .inner { max-width: 460px; margin: 0 auto; width: 100%; display: flex; align-items: center; gap: 10px; }
+  .sync { flex: 1; display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--color-neutral-600); padding-left: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--color-accent-2-500); flex: none; }
+  .dot.busy { background: var(--color-accent); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .fab {
+    border: none; background: var(--color-accent); color: var(--color-bg); border-radius: 999px;
+    height: 52px; padding: 0 22px; display: flex; align-items: center; gap: 9px;
+    font-family: var(--font-heading); font-size: 16px; cursor: pointer; box-shadow: var(--shadow-md);
+  }
+  .fab:hover { background: var(--color-accent-600); }
+  .fab:active { background: var(--color-accent-700); }
+
+  .backdrop { position: fixed; inset: 0; background: color-mix(in srgb, #2e2b25 42%, transparent); z-index: 5; animation: fade .18s ease-out; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; max-width: 460px; margin: 0 auto;
+    background: var(--color-neutral-100); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 12px 22px calc(26px + env(safe-area-inset-bottom));
+    box-shadow: var(--shadow-lg); animation: up .26s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .grab { width: 42px; height: 4px; border-radius: 999px; background: var(--color-neutral-300); margin: 0 auto 16px; }
+  .sheet h2 { margin: 0 0 14px; font-family: var(--font-heading); font-weight: 400; font-size: 24px; }
+  .field {
+    width: 100%; font-size: 16px; padding: 13px 15px; border: 1px solid var(--color-divider);
+    border-radius: 999px; background: var(--color-bg);
+  }
+  .field:hover { border-color: var(--color-neutral-500); }
+  .field:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+  .rowline { display: flex; gap: 9px; margin-top: 10px; }
+  .rowline .field { width: 96px; text-align: center; }
+  .mine {
+    flex: 1; border: 1.5px solid var(--color-divider); background: transparent; color: var(--color-neutral-600);
+    border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer; padding: 0 14px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .mine.on { border-color: var(--color-accent-2-600); background: var(--color-accent-2-200); color: var(--color-accent-2-800); }
+  .primary {
+    width: 100%; margin-top: 14px; border: none; background: var(--color-accent); color: var(--color-bg);
+    border-radius: 999px; padding: 15px; font-family: var(--font-heading); font-size: 16px; cursor: pointer;
+  }
+  .primary:hover { background: var(--color-accent-600); }
+  .primary:active { background: var(--color-accent-700); }
+  .primary:disabled { opacity: .45; cursor: not-allowed; }
+
+  .opt {
+    width: 100%; text-align: left; border: 1.5px solid var(--color-divider); background: transparent;
+    border-radius: var(--radius-md); padding: 13px 15px; font-size: 14.5px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+  }
+  .opt:hover { background: var(--color-neutral-200); }
+  .opt.on { border-color: var(--color-accent); background: var(--color-accent-100); }
+  .opt em { font-style: normal; font-size: 13px; font-weight: 700; color: var(--color-accent-700); }
+  .opts { display: flex; flex-direction: column; gap: 7px; }
+  .rule { height: 1px; background: var(--color-divider); margin: 18px 0; }
+  .switchrow {
+    width: 100%; border: none; background: transparent; padding: 6px 2px; display: flex;
+    align-items: center; justify-content: space-between; cursor: pointer; font-size: 14.5px; font-weight: 600;
+  }
+  .track { width: 46px; height: 27px; border-radius: 999px; background: var(--color-neutral-300); position: relative; transition: background .2s; flex: none; }
+  .track.on { background: var(--color-accent-2-600); }
+  .track i { position: absolute; top: 3px; left: 3px; width: 21px; height: 21px; border-radius: 999px; background: var(--color-neutral-100); transition: left .2s; }
+  .track.on i { left: 22px; }
+
+  .gate {
+    position: fixed; inset: 0; z-index: 8; background: var(--color-bg);
+    padding: calc(58px + env(safe-area-inset-top)) 26px calc(26px + env(safe-area-inset-bottom));
+    animation: fade .2s ease-out; display: flex; flex-direction: column; max-width: 460px; margin: 0 auto;
+  }
+  .gate h1 { margin: 10px 0 6px; font-size: 38px; line-height: 1.04; }
+  .gate p { margin: 0 0 22px; font-size: 14px; color: var(--color-neutral-700); line-height: 1.5; max-width: 270px; }
+  .gate .who {
+    border: 1.5px solid var(--color-divider); background: var(--color-neutral-100); border-radius: 999px;
+    padding: 9px 18px 9px 9px; display: flex; align-items: center; gap: 13px; cursor: pointer;
+    font-size: 16px; font-weight: 600; width: 100%; text-align: left;
+  }
+  .gate .who:hover { border-color: var(--color-accent); background: var(--color-accent-100); }
+  .gate .who .av { width: 38px; height: 38px; font-size: 15px; }
+  .gate .whos { display: flex; flex-direction: column; gap: 9px; overflow-y: auto; }
+  .gate .newrow { margin-top: auto; padding-top: 22px; display: flex; gap: 9px; }
+  .gate .go {
+    flex: none; border: none; background: var(--color-accent); color: var(--color-bg); border-radius: 999px;
+    width: 54px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .gate .go:hover { background: var(--color-accent-600); }
+  .setup {
+    margin: 18px 22px; padding: 16px; border: 1.5px dashed var(--color-accent); border-radius: var(--radius-md);
+    background: var(--color-accent-100); font-size: 13.5px; line-height: 1.6;
+  }
+  .setup code { background: var(--color-bg); padding: 1px 6px; border-radius: 6px; }
+  .note-foot { margin: 22px 22px 0; font-size: 12px; color: var(--color-neutral-600); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="scroll">
+    <div class="head">
+      <div class="headtop">
+        <p class="kicker">Weekend weg</p>
+        <button class="me" id="meBtn"><span class="av" id="meAv">?</span><span id="meName">Wie ben jij?</span></button>
+      </div>
+      <h1>De lijst</h1>
+      <div class="prog"><b id="progText">—</b><span id="openText"></span></div>
+      <div class="bar"><div id="progBar" style="width:0%"></div></div>
+      <div class="people noscroll" id="people"></div>
+    </div>
+
+    <div id="setupNotice" class="setup" style="display:none;">
+      Nog niet gekoppeld aan Supabase. Vul <code>SUPABASE_URL</code> en <code>SUPABASE_ANON_KEY</code> in bovenin het script.
+    </div>
+
+    <div class="bar-controls">
+      <div class="chips noscroll" id="chips"></div>
+      <button class="iconbtn" id="sortBtn" aria-label="Sorteren">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M4 7h16M6 12h12M9 17h6"/></svg>
+      </button>
+    </div>
+
+    <div class="list" id="list"></div>
+    <p class="note-foot">Iedereen met de link ziet en bewerkt dezelfde lijst, live. Deel 'm dus alleen met de groep.</p>
+  </div>
+
+  <div class="footbar">
+    <div class="inner">
+      <div class="sync"><span class="dot" id="syncDot"></span><span id="syncText">verbinden…</span></div>
+      <button class="fab" id="addBtn">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Toevoegen
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="overlays"></div>
+
+<script>
+// ---- configuratie ----
+const SUPABASE_URL = 'https://rebbbbepcbwskvtxafcr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlYmJiYmVwY2J3c2t2dHhhZmNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczNDMzNDEsImV4cCI6MjEwMjkxOTM0MX0.GYKdahxYFfRnpFxq6QpFrA10g6nIjhksyHAtQkPM2jw';
+// ----------------------
+
+const COLORS = ['#8c491a', '#56633f', '#b2622d', '#728157', '#645c50', '#402310'];
+
+let items = [];
+let supa = null;
+let me = localStorage.getItem('bl.me') || null;
+let filter = 'alles';
+let sort = localStorage.getItem('bl.sort') || 'toegevoegd';
+let hideDone = localStorage.getItem('bl.hideDone') === '1';
+let showDone = false;
+let sheet = null;            // 'add' | 'sort' | 'wie' | null
+let draft = { name: '', qty: '', mine: true };
+let newName = '';
+
+const $ = id => document.getElementById(id);
+const esc = s => { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; };
+const initial = n => (n || '?').trim().slice(0, 1).toUpperCase();
+
+function names() {
+  const set = [...new Set(items.map(i => i.who).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  if (me && !set.includes(me)) set.push(me);
+  return set;
+}
+function color(name) {
+  const list = names();
+  const i = list.indexOf(name);
+  return COLORS[(i < 0 ? 0 : i) % COLORS.length];
+}
+
+function setSync(state, label) {
+  $('syncDot').className = state === 'busy' ? 'dot busy' : 'dot';
+  $('syncText').textContent = label;
+}
+const isConfigured = () => SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length > 20;
+
+async function init() {
+  if (!isConfigured()) {
+    $('setupNotice').style.display = 'block';
+    setSync('idle', 'niet gekoppeld');
+    render();
+    return;
+  }
+  supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  await loadItems();
+  supa.channel('items-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, loadItems)
+    .subscribe();
+}
+
+async function loadItems() {
+  setSync('busy', 'laden…');
+  const { data, error } = await supa.from('items').select('*').order('created_at', { ascending: true });
+  if (error) { setSync('busy', 'kon lijst niet laden'); return; }
+  items = data;
+  render();
+  setSync('idle', 'live · iedereen met de link');
+}
+
+/* ---------- rendering ---------- */
+
+function render() {
+  renderHeader();
+  renderPeople();
+  renderChips();
+  renderList();
+  renderOverlays();
+}
+
+function renderHeader() {
+  $('meName').textContent = me || 'Wie ben jij?';
+  $('meAv').textContent = me ? initial(me) : '?';
+  $('meAv').style.background = me ? color(me) : 'var(--color-neutral-400)';
+  const done = items.filter(i => i.done).length;
+  $('progText').textContent = items.length ? done + ' van ' + items.length + ' in de tas' : 'Nog niets op de lijst';
+  const open = items.length - done;
+  $('openText').textContent = !items.length ? '' : (open === 0 ? 'alles compleet' : open + ' te gaan');
+  $('progBar').style.width = (items.length ? Math.round(done / items.length * 100) : 0) + '%';
+}
+
+function renderPeople() {
+  const box = $('people');
+  box.innerHTML = names().map(n => {
+    const mine = items.filter(i => i.who === n);
+    return '<button class="person ' + (filter === n ? 'on' : '') + '" data-person="' + esc(n) + '">'
+      + '<span class="av" style="background:' + color(n) + '">' + esc(initial(n)) + '</span>'
+      + '<span class="nm">' + esc(n) + '</span>'
+      + '<span class="ct">' + mine.filter(i => i.done).length + '/' + mine.length + '</span></button>';
+  }).join('');
+  box.querySelectorAll('[data-person]').forEach(b => b.onclick = () => {
+    const n = b.dataset.person;
+    filter = filter === n ? 'alles' : n;
+    render();
+  });
+}
+
+function renderChips() {
+  const defs = [
+    { k: 'alles', l: 'Alles' },
+    { k: 'mijn', l: me ? 'Mijn spullen' : 'Zonder naam' },
+    { k: 'niemand', l: 'Nog niemand' }
+  ].concat(names().map(n => ({ k: n, l: n })));
+  const box = $('chips');
+  box.innerHTML = defs.map(c =>
+    '<button class="chip ' + (filter === c.k ? 'on' : '') + '" data-chip="' + esc(c.k) + '">' + esc(c.l) + '</button>'
+  ).join('');
+  box.querySelectorAll('[data-chip]').forEach(b => b.onclick = () => { filter = b.dataset.chip; render(); });
+  $('sortBtn').className = 'iconbtn' + (sort === 'toegevoegd' && !hideDone ? '' : ' on');
+}
+
+function visible() {
+  let vis = items;
+  if (filter === 'mijn') vis = items.filter(i => i.who === me);
+  else if (filter === 'niemand') vis = items.filter(i => !i.who);
+  else if (filter !== 'alles') vis = items.filter(i => i.who === filter);
+  if (hideDone) vis = vis.filter(i => !i.done);
+  return vis;
+}
+
+function rowHtml(i) {
+  const note = i.who ? (i.who === me ? 'jij neemt dit mee' : esc(i.who) + ' neemt dit mee') : 'nog niemand neemt dit mee';
+  return '<div class="row ' + (i.done ? 'done' : '') + '">'
+    + '<button class="check" data-toggle="' + i.id + '" aria-label="Afvinken">'
+    +   '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f5ead8" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+    + '</button>'
+    + '<div class="body"><div class="title"><span class="nm">' + esc(i.name) + '</span>'
+    +   (i.qty ? '<span class="qty">' + esc(i.qty) + '</span>' : '') + '</div>'
+    +   '<div class="note">' + note + '</div></div>'
+    + '<button class="claim ' + (i.who ? 'taken' : '') + '" data-claim="' + i.id + '"'
+    +   (i.who ? ' style="background:' + color(i.who) + '"' : '')
+    +   ' title="' + (i.who === me ? 'naam weghalen' : 'ik neem dit mee') + '">'
+    +   (i.who ? esc(initial(i.who)) : '+') + '</button>'
+    + '<button class="del" data-del="' + i.id + '" aria-label="Verwijderen">'
+    +   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+    + '</button></div>';
+}
+
+function renderList() {
+  const vis = visible();
+  const open = vis.filter(i => !i.done);
+  const done = vis.filter(i => i.done);
+  let groups = [];
+
+  if (sort === 'persoon') {
+    const keys = [...new Set(open.map(i => i.who || 'Nog niemand'))]
+      .sort((a, b) => a === 'Nog niemand' ? 1 : b === 'Nog niemand' ? -1 : a.localeCompare(b));
+    groups = keys.map(k => ({ title: k === me ? 'Jij' : k, items: open.filter(i => (i.who || 'Nog niemand') === k) }));
+  } else if (sort === 'ongeclaimd') {
+    const zonder = open.filter(i => !i.who), met = open.filter(i => i.who);
+    if (zonder.length) groups.push({ title: 'Nog niemand', items: zonder });
+    if (met.length) groups.push({ title: 'Al geclaimd', items: met });
+  } else {
+    const list = sort === 'naam' ? [...open].sort((a, b) => a.name.localeCompare(b.name)) : open;
+    groups = [{ title: null, items: list }];
+  }
+  if (showDone && done.length) groups.push({ title: 'In de tas', items: done });
+
+  let html = groups.map(g => '<div>'
+    + (g.title ? '<div class="grouphead"><b>' + esc(g.title) + '</b><span>' + g.items.length + '</span></div>' : '')
+    + '<div class="rows">' + g.items.map(rowHtml).join('') + '</div></div>').join('');
+
+  if (!groups.some(g => g.items.length)) {
+    html += '<div class="empty"><div class="blob"></div><b>'
+      + (filter === 'alles' ? 'Nog niets op de lijst' : 'Hier staat niets open') + '</b><span>'
+      + (filter === 'alles' ? 'Zet met de knop hieronder het eerste ding op de lijst.' : 'Kies een ander filter of voeg iets toe.')
+      + '</span></div>';
+  }
+  if (done.length && !hideDone) {
+    html += '<button class="donetoggle" id="doneToggle">'
+      + (showDone ? 'Verberg' : 'Bekijk') + ' wat al in de tas zit (' + done.length + ')</button>';
+  }
+
+  const list = $('list');
+  list.innerHTML = html;
+  const dt = $('doneToggle');
+  if (dt) dt.onclick = () => { showDone = !showDone; render(); };
+  list.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => toggleDone(b.dataset.toggle));
+  list.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => claim(b.dataset.claim));
+  list.querySelectorAll('[data-del]').forEach(b => b.onclick = () => removeItem(b.dataset.del));
+}
+
+/* ---------- overlays: sheets + naamkeuze ---------- */
+
+function renderOverlays() {
+  const box = $('overlays');
+  const gate = sheet === 'wie' || me === null;
+  let html = '';
+
+  if (!gate && sheet) html += '<div class="backdrop" id="backdrop"></div>';
+
+  if (!gate && sheet === 'add') {
+    html += '<div class="sheet"><div class="grab"></div><h2>Wat moet er mee?</h2>'
+      + '<input class="field" id="dName" placeholder="Koffie, gemalen" value="' + esc(draft.name) + '">'
+      + '<div class="rowline"><input class="field" id="dQty" placeholder="aantal" value="' + esc(draft.qty) + '">'
+      + '<button class="mine ' + (draft.mine ? 'on' : '') + '" id="dMine">'
+      + (draft.mine ? 'Ik neem het mee' : 'Nog niemand') + '</button></div>'
+      + '<button class="primary" id="dSubmit"' + (draft.name.trim() ? '' : ' disabled') + '>Op de lijst zetten</button></div>';
+  }
+
+  if (!gate && sheet === 'sort') {
+    const opts = [
+      { k: 'toegevoegd', l: 'Zoals toegevoegd' },
+      { k: 'naam', l: 'Op naam (A–Z)' },
+      { k: 'persoon', l: 'Gegroepeerd per persoon' },
+      { k: 'ongeclaimd', l: 'Nog niemand bovenaan' }
+    ];
+    html += '<div class="sheet"><div class="grab"></div><h2>Sorteren</h2><div class="opts">'
+      + opts.map(o => '<button class="opt ' + (sort === o.k ? 'on' : '') + '" data-sort="' + o.k + '">'
+        + o.l + (sort === o.k ? '<em>gekozen</em>' : '') + '</button>').join('')
+      + '</div><div class="rule"></div>'
+      + '<button class="switchrow" id="hideDone">Afgevinkte items verbergen'
+      + '<span class="track ' + (hideDone ? 'on' : '') + '"><i></i></span></button></div>';
+  }
+
+  if (gate) {
+    html += '<div class="gate"><p class="kicker">Weekend weg</p><h1>Wie ben jij?</h1>'
+      + '<p>Eén keer kiezen. Daarna zet je met één tik je naam bij wat jij meeneemt.</p>'
+      + '<div class="whos">'
+      + names().map(n => '<button class="who" data-be="' + esc(n) + '">'
+        + '<span class="av" style="background:' + color(n) + '">' + esc(initial(n)) + '</span>' + esc(n) + '</button>').join('')
+      + '</div><div class="newrow"><input class="field" id="gName" placeholder="Of typ je naam" value="' + esc(newName) + '">'
+      + '<button class="go" id="gGo" aria-label="Doorgaan">'
+      + '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+      + '</button></div></div>';
+  }
+
+  box.innerHTML = html;
+
+  const bd = $('backdrop');
+  if (bd) bd.onclick = () => { sheet = null; render(); };
+
+  const dName = $('dName');
+  if (dName) {
+    dName.oninput = e => { draft.name = e.target.value; $('dSubmit').disabled = !draft.name.trim(); };
+    $('dQty').oninput = e => { draft.qty = e.target.value; };
+    $('dMine').onclick = () => { draft.mine = !draft.mine; render(); };
+    $('dSubmit').onclick = submitDraft;
+    dName.addEventListener('keydown', e => { if (e.key === 'Enter') submitDraft(); });
+    dName.focus();
+  }
+
+  box.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => {
+    sort = b.dataset.sort;
+    localStorage.setItem('bl.sort', sort);
+    render();
+  });
+  const hd = $('hideDone');
+  if (hd) hd.onclick = () => {
+    hideDone = !hideDone;
+    localStorage.setItem('bl.hideDone', hideDone ? '1' : '0');
+    render();
+  };
+
+  box.querySelectorAll('[data-be]').forEach(b => b.onclick = () => setMe(b.dataset.be));
+  const gName = $('gName');
+  if (gName) {
+    gName.oninput = e => { newName = e.target.value; };
+    gName.addEventListener('keydown', e => { if (e.key === 'Enter') setMe(newName); });
+    $('gGo').onclick = () => setMe(newName);
+  }
+}
+
+function setMe(n) {
+  n = (n || '').trim();
+  if (!n) return;
+  me = n;
+  newName = '';
+  localStorage.setItem('bl.me', me);
+  sheet = null;
+  render();
+}
+
+/* ---------- schrijven naar Supabase ---------- */
+
+async function submitDraft() {
+  const name = draft.name.trim();
+  if (!name || !isConfigured()) return;
+  const payload = { name, qty: draft.qty.trim() || null, who: draft.mine ? me : null, done: false };
+  draft = { name: '', qty: '', mine: true };
+  sheet = null;
+  render();
+  setSync('busy', 'opslaan…');
+  const { error } = await supa.from('items').insert(payload);
+  if (error) setSync('idle', 'opslaan mislukt');
+  else loadItems();
+}
+
+async function toggleDone(id) {
+  const item = items.find(i => String(i.id) === String(id));
+  if (!item || !supa) return;
+  item.done = !item.done;
+  render();
+  setSync('busy', 'opslaan…');
+  const { error } = await supa.from('items').update({ done: item.done }).eq('id', id);
+  if (error) setSync('idle', 'opslaan mislukt');
+}
+
+async function claim(id) {
+  if (!me) { sheet = 'wie'; render(); return; }
+  const item = items.find(i => String(i.id) === String(id));
+  if (!item || !supa) return;
+  const who = item.who === me ? null : me;
+  item.who = who;
+  render();
+  setSync('busy', 'opslaan…');
+  const { error } = await supa.from('items').update({ who }).eq('id', id);
+  if (error) setSync('idle', 'opslaan mislukt');
+}
+
+async function removeItem(id) {
+  if (!supa) return;
+  items = items.filter(i => String(i.id) !== String(id));
+  render();
+  setSync('busy', 'verwijderen…');
+  const { error } = await supa.from('items').delete().eq('id', id);
+  if (error) setSync('idle', 'verwijderen mislukt');
+}
+
+$('addBtn').onclick = () => { sheet = 'add'; render(); };
+$('sortBtn').onclick = () => { sheet = 'sort'; render(); };
+$('meBtn').onclick = () => { sheet = 'wie'; render(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheet) { sheet = null; render(); } });
+
+render();
+init();
+</script>
+</body>
+</html>
